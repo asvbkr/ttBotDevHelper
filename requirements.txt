@@ -1,0 +1,6 @@
+six
+urllib3
+django
+gunicorn
+django-heroku
+requests
