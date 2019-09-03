@@ -3,7 +3,7 @@ import os
 
 from TamTamBot import CallbackButtonCmd, UpdateCmn
 from TamTamBotDj.TamTamBotDj import TamTamBotDj
-from openapi_client import BotCommand, Intent, NewMessageBody, ChatType, MessageList, MessageLinkType
+from openapi_client import BotCommand, Intent, NewMessageBody, ChatType, MessageList, MessageLinkType, NewMessageLink
 from openapi_client.rest import ApiException
 
 
@@ -45,14 +45,12 @@ class BotDevHelper(TamTamBotDj):
 
     def receive_text(self, update):
         # type: (UpdateCmn) -> bool
-        res = self.view_messages(update, [update.message.body.mid])
+        res = self.view_messages(update, [update.message.body.mid], update.link)
         return bool(res)
 
     def cmd_handler_vmp(self, update):
         # type: (UpdateCmn) -> bool
         res = None
-        if not (update.chat_type in [ChatType.DIALOG]):
-            return False
         if not (update.chat_type in [ChatType.DIALOG]):
             return False
         if not update.this_cmd_response:  # Прямой вызов команды
@@ -80,21 +78,21 @@ class BotDevHelper(TamTamBotDj):
 
         return bool(res)
 
-    def view_messages(self, update, list_id):
-        # type: (UpdateCmn, [str]) -> bool
-        res = None
+    def view_messages(self, update, list_mid, link=None):
+        # type: (UpdateCmn, [str], NewMessageLink) -> bool
+        res = False
         try:
-            msgs = self.msg.get_messages(message_ids=list_id)
+            msgs = self.msg.get_messages(message_ids=list_mid)
         except ApiException:
-            self.msg.send_message(NewMessageBody(f'Error(s) in messages ids {list_id}', link=update.link), user_id=update.user_id)
+            self.msg.send_message(NewMessageBody(f'Error(s) in messages ids {list_mid}', link=link), user_id=update.user_id)
             return False
         if isinstance(msgs, MessageList):
-            if len(msgs.messages) < len(list_id):
+            if len(msgs.messages) < len(list_mid):
                 self.msg.send_message(NewMessageBody(
                     f'Unable to receive all requested messages. Check the @{self.username} bot\'s access to the chat with these messages.', link=update.link
                 ), user_id=update.user_id)
                 return False
             else:
                 for msg in msgs.messages:
-                    res = self.msg.send_message(NewMessageBody(f'Message {msg.body.mid}:\n`{msg}'[:NewMessageBody.MAX_BODY_LENGTH], link=update.link), user_id=update.user_id)
+                    res = res or self.msg.send_message(NewMessageBody(f'Message {msg.body.mid}:\n`{msg}'[:NewMessageBody.MAX_BODY_LENGTH], link=update.link), user_id=update.user_id)
         return res
