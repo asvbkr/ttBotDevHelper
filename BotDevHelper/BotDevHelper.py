@@ -45,6 +45,8 @@ class BotDevHelper(TamTamBotDj):
 
     def receive_text(self, update):
         # type: (UpdateCmn) -> bool
+        if not (update.chat_type in [ChatType.DIALOG]):
+            return False
         res = self.view_messages(update, [update.message.body.mid], update.link)
         return bool(res)
 
